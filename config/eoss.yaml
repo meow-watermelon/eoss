@@ -1,0 +1,4 @@
+VERSION_SALT: "snoopy"
+STORAGE_PATH: "/home/ericlee/EOSS/data"
+METADATA_DB_PATH: "/home/ericlee/EOSS/mds/mds.sql"
+LOGGING_PATH: "/home/ericlee/EOSS/log"
