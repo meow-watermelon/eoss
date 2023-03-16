@@ -1,0 +1,4 @@
+| id | string | object unique id |
+| name | string | object original filename |
+| version | string | object version |
+| state | integer | object writing status |
