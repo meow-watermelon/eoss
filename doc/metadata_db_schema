@@ -1,4 +1,6 @@
 | id | string | object unique id |
 | name | string | object original filename |
 | version | string | object version |
+| size | integer | object size |
+| timestamp | integer | object latest uploaded timestamp (unix epoch) |
 | state | integer | object writing status |
