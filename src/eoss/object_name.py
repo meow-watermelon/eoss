@@ -1,6 +1,7 @@
 import base64
 from . import VERSION_SALT
 
+
 def set_object_name(object_filename, version_string=None):
     """
     construct object name by using base64
@@ -14,6 +15,7 @@ def set_object_name(object_filename, version_string=None):
         object_name = base64.b64encode(object_name_plain.encode()).decode()
 
     return object_name
+
 
 def decode_object_name(object_name):
     """

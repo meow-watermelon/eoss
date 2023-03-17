@@ -2,6 +2,7 @@ import yaml
 
 __version__ = "0.0.1"
 
+
 def read_config(config_file):
     """
     read YAML format configuration file
@@ -15,6 +16,7 @@ def read_config(config_file):
         pass
 
     return config
+
 
 config_file_path = "/home/ericlee/Projects/git/eoss/config/eoss.yaml"
 
