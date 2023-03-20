@@ -70,6 +70,7 @@ if __name__ == "__main__":
         print(
             f"ERROR: MDS database {METADATA_DB_PATH} exists already, please remove this file if you want to bootstrap a clean MDS database"
         )
+        sys.exit(2)
     else:
         mds_bootstrap_return = bootstrap_mds(METADATA_DB_TABLE)
         if mds_bootstrap_return:
