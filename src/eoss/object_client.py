@@ -22,6 +22,9 @@ class ObjectClient:
         self.object_name = object_name.set_object_name(
             self.object_filename, self.object_version
         )
+        log.info(
+            f"object filename: {self.object_filename}; object name: {self.object_name}; object version: {self.object_version}"
+        )
         self.mds_client = mds_client.MDSClient()
 
     def init_mds(self):
@@ -44,16 +47,21 @@ class ObjectClient:
         """
         try:
             self.mds_client.execute(
-                f"INSERT INTO {METADATA_DB_TABLE} VALUES (?, ?, ?, ?, ?, ?)", (self.object_name, self.object_filename, None, None, None, 1)
+                f"INSERT INTO {METADATA_DB_TABLE} VALUES (?, ?, ?, ?, ?, ?)",
+                (self.object_name, self.object_filename, None, None, None, 1),
             )
         except MDSExecuteException as e:
-            log.error(f"failed to set initial object data for object {self.object_filename}")
+            log.error(
+                f"failed to set initial object data for object {self.object_filename}"
+            )
             raise MDSExecuteException
 
         try:
             self.mds_client.commit()
         except MDSCommitException as e:
-            log.error(f"failed to commit initial object data for object {self.object_filename}")
+            log.error(
+                f"failed to commit initial object data for object {self.object_filename}"
+            )
             raise MDSCommitException
 
         log.info(f"object {self.object_filename} initialized done in MDS database")
@@ -73,7 +81,8 @@ class ObjectClient:
 
         try:
             self.mds_client.execute(
-                f"UPDATE {METADATA_DB_TABLE} SET size = ? WHERE id = ?", (size, self.object_name)
+                f"UPDATE {METADATA_DB_TABLE} SET size = ? WHERE id = ?",
+                (size, self.object_name),
             )
         except MDSExecuteException as e:
             log.warning(f"failed to update size of object {self.object_filename}: {e}")
