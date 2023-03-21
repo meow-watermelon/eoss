@@ -31,7 +31,7 @@ def bootstrap_mds(mds_table):
     mds.cursor()
 
     # execute SQL query to create table
-    sql_create_table = f"CREATE TABLE {mds_table} (id STRING, filename STRING, version STRING, size INTEGER, timestamp INTEGER, state INTEGER)"
+    sql_create_table = f"CREATE TABLE {mds_table} (id STRING PRIMARY KEY, filename STRING, version STRING, size INTEGER, timestamp INTEGER, state INTEGER)"
     try:
         mds.execute(sql_create_table)
     except MDSExecuteException as e:
