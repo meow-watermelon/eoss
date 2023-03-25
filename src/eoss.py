@@ -28,6 +28,9 @@ app = Flask(__name__)
 
 @app.route("/eoss/v1/stats", methods=["GET"])
 def get_eoss_object_stats():
+    if request.method != "GET":
+        return ("Bad Request", 400)
+
     output = {}
     mds = mds_client.MDSClient()
 
@@ -53,8 +56,31 @@ def get_eoss_object_stats():
 
     # get total storage usage
     # unit: byte
+    try:
+        mds_output = mds.execute(
+            f"SELECT SUM(size) FROM {METADATA_DB_TABLE}"
+        ).fetchall()
+    except MDSExecuteException as e:
+        log.error(f"failed to execute SQL query: {e}")
+        return ("MDS Execution Failure", 520)
+    else:
+        total_storage_usage = mds_output[0][0]
+        output["total_storage_usage"] = total_storage_usage
 
     # get youngest and oldest timestamps for objects
+    try:
+        mds_output = mds.execute(
+            f"SELECT DISTINCT MIN(timestamp) FROM {METADATA_DB_TABLE} UNION ALL SELECT DISTINCT MAX(timestamp) FROM {METADATA_DB_TABLE}"
+        ).fetchall()
+    except MDSExecuteException as e:
+        log.error(f"failed to execute SQL query: {e}")
+        return ("MDS Execution Failure", 520)
+    else:
+        log.info(f"{mds_output}")
+        youngest_object_updated_timestamp = mds_output[0][0]
+        oldest_object_updated_timestamp = mds_output[1][0]
+        output["youngest_object_updated_timestamp"] = youngest_object_updated_timestamp
+        output["oldest_object_updated_timestamp"] = oldest_object_updated_timestamp
 
     mds.close()
 
