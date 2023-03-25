@@ -22,10 +22,11 @@ class ObjectClient:
         self.object_name = object_name.set_object_name(
             self.object_filename, self.object_version
         )
-        log.info(
-            f"object filename: {self.object_filename}; object name: {self.object_name}; object version: {self.object_version}"
-        )
+        log.info(self.__repr__())
         self.mds_client = mds_client.MDSClient()
+
+    def __repr__(self):
+        return f"object filename: {self.object_filename}; object name: {self.object_name}; object version: {self.object_version}"
 
     def init_mds(self):
         try:
