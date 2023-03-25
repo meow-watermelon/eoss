@@ -43,13 +43,13 @@ class ObjectClient:
 
     def set_object_init_data(self):
         """
-        set initialized data for object, only id, filename and state would be inserted
+        set initialized data for object, only id, filename, version and state would be inserted
         this method should only run once when a new object is uploaded
         """
         try:
             self.mds_client.execute(
                 f"INSERT INTO {METADATA_DB_TABLE} VALUES (?, ?, ?, ?, ?, ?)",
-                (self.object_name, self.object_filename, None, None, None, 1),
+                (self.object_name, self.object_filename, self.object_version, None, None, 1),
             )
         except MDSExecuteException as e:
             log.error(

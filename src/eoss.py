@@ -2,9 +2,12 @@
 
 import time
 from eoss import logger
+from eoss import mds_client
 from eoss import object_client
 from eoss import utils
 from eoss import LOGGING_PATH
+from eoss import METADATA_DB_TABLE
+from eoss import SAFEMODE
 from eoss import STORAGE_PATH
 from eoss.exceptions import MDSConnectException
 from eoss.exceptions import MDSExecuteException
@@ -12,6 +15,7 @@ from eoss.exceptions import MDSCommitException
 from eoss.exceptions import EOSSInternalException
 from flask import Flask
 from flask import g
+from flask import jsonify
 from flask import request
 from werkzeug.serving import WSGIRequestHandler
 
@@ -20,6 +24,41 @@ log = logger.Logger(__name__, LOGGING_PATH + "/" + "eoss.log")
 access_log = logger.AccessLogger("access_log", LOGGING_PATH + "/" + "access.log")
 
 app = Flask(__name__)
+
+
+@app.route("/eoss/v1/stats", methods=["GET"])
+def get_eoss_object_stats():
+    output = {}
+    mds = mds_client.MDSClient()
+
+    try:
+        mds.connect()
+    except MDSConnectException as e:
+        log.error(f"failed to connect metadata database: {e}")
+        return ("MDS Connection Failure", 520)
+
+    mds.cursor()
+
+    # get total number of objects
+    try:
+        mds_output = mds.execute(
+            f"SELECT COUNT(id) FROM {METADATA_DB_TABLE}"
+        ).fetchall()
+    except MDSExecuteException as e:
+        log.error(f"failed to execute SQL query: {e}")
+        return ("MDS Execution Failure", 520)
+    else:
+        total_number_objects = mds_output[0][0]
+        output["total_number_objects"] = total_number_objects
+
+    # get total storage usage
+    # unit: byte
+
+    # get youngest and oldest timestamps for objects
+
+    mds.close()
+
+    return (jsonify(output), 200)
 
 
 @app.before_request
