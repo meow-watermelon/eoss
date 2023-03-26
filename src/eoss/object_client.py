@@ -205,6 +205,10 @@ class ObjectClient:
 
         if not rollback_flag:
             log.info(f"[ROLLBACK] rollback procedure on object {self.object_name} done")
+            return True
+        else:
+            log.warning("[ROLLBACK] rollback procedure on object {self.object_name} failed")
+            return False
 
     def check_object_exists(self):
         """
