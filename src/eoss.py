@@ -26,6 +26,72 @@ access_log = logger.AccessLogger("access_log", LOGGING_PATH + "/" + "access.log"
 app = Flask(__name__)
 
 
+@app.route(
+    "/eoss/v1/object/<string:object_filename>", methods=["GET", "HEAD", "DELETE", "PUT"]
+)
+def process_object(object_filename):
+    if request.method not in ("GET", "HEAD", "DELETE", "PUT"):
+        return ("Bad Request", 400)
+
+    # HTTP methods usage
+    # GET: get object
+    # HEAD: check if object exists
+    # DELETE: delete object
+    # PUT: upload object
+
+    # get object version information
+    if "X-EOSS-Object-Version" in request.headers:
+        object_version = request.headers["X-EOSS-Object-Version"]
+    else:
+        object_version = None
+
+    log.info(f"object_filename: {object_filename} object_version: {object_version}")
+
+    # initialize object client
+    eoss_object_client = object_client.ObjectClient(
+        object_filename, object_version=object_version
+    )
+    try:
+        eoss_object_client.init_mds()
+    except MDSConnectException as e:
+        log.error(f"failed to connect to metadata database: {str(e)}")
+        return ("MDS Connection Failure", 520)
+
+    if request.method == "HEAD":
+        try:
+            object_exists_flag = eoss_object_client.check_object_exists()
+        except MDSExecuteException as e:
+            log.error(f"failed to execute SQL query: {e}")
+            return ("MDS Execution Failure", 521)
+        except EOSSInternalException as e:
+            log.error(
+                f"uncaught issue when acquiring object {eoss_object_client.object_name} state"
+            )
+            return ("EOSS Internal Exception Failure", 523)
+
+        eoss_object_client.close_mds()
+
+        if object_exists_flag is True:
+            return ("Object Exists", 200)
+        if object_exists_flag is False:
+            return ("Object Does Not Exist", 404)
+        if object_exists_flag == 1:
+            return ("Object Initialized Only", 409)
+        if object_exists_flag == 2:
+            return ("Object Saved Not Closed", 409)
+        if object_exists_flag == 3:
+            return ("Object MDS Closed Not In Local", 404)
+
+    if request.method == "GET":
+        pass
+
+    if request.method == "DELETE":
+        pass
+
+    if request.method == "PUT":
+        pass
+
+
 @app.route("/eoss/v1/stats", methods=["GET"])
 def get_eoss_object_stats():
     if request.method != "GET":
@@ -37,7 +103,7 @@ def get_eoss_object_stats():
     try:
         mds.connect()
     except MDSConnectException as e:
-        log.error(f"failed to connect metadata database: {e}")
+        log.error(f"failed to connect to metadata database: {e}")
         return ("MDS Connection Failure", 520)
 
     mds.cursor()
