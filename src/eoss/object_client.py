@@ -215,6 +215,7 @@ class ObjectClient:
         False: object does not exists
         number 1: object uploading request initialized
         number 2: object is saved in local storage w/ "object_name.temp" name
+        number 3: object state is fully closed but object does not exist
         """
         output = None
 
@@ -239,8 +240,10 @@ class ObjectClient:
 
             object_exists_flag = output[0][0]
 
-            if object_exists_flag == 0:
+            if object_exists_flag == 0 and os.path.exists(STORAGE_PATH + "/" + self.object_name):
                 return True
+            if object_exists_flag == 0 and not os.path.exists(STORAGE_PATH + "/" + self.object_name):
+                return 3
             if object_exists_flag == 1:
                 return 1
             if object_exists_flag == 2:

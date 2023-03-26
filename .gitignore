@@ -1,3 +1,4 @@
 src/local.py
+src/local_test.py
 test.log
 src/eoss/__pycache__/
