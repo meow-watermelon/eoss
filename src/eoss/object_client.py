@@ -19,14 +19,15 @@ class ObjectClient:
     def __init__(self, object_filename, *, object_version=None):
         self.object_filename = object_filename
         self.object_version = object_version
-        self.object_name = object_name.set_object_name(
-            self.object_filename, self.object_version
-        )
         log.info(self.__repr__())
         self.mds_client = mds_client.MDSClient()
 
     def __repr__(self):
         return f"object filename: {self.object_filename}; object name: {self.object_name}; object version: {self.object_version}"
+
+    @property
+    def object_name(self):
+        return object_name.set_object_name(self.object_filename, self.object_version)
 
     def init_mds(self):
         try:
@@ -49,7 +50,14 @@ class ObjectClient:
         try:
             self.mds_client.execute(
                 f"INSERT INTO {METADATA_DB_TABLE} VALUES (?, ?, ?, ?, ?, ?)",
-                (self.object_name, self.object_filename, self.object_version, None, None, 1),
+                (
+                    self.object_name,
+                    self.object_filename,
+                    self.object_version,
+                    None,
+                    None,
+                    1,
+                ),
             )
         except MDSExecuteException as e:
             log.error(
@@ -207,7 +215,9 @@ class ObjectClient:
             log.info(f"[ROLLBACK] rollback procedure on object {self.object_name} done")
             return True
         else:
-            log.warning("[ROLLBACK] rollback procedure on object {self.object_name} failed")
+            log.warning(
+                "[ROLLBACK] rollback procedure on object {self.object_name} failed"
+            )
             return False
 
     def check_object_exists(self):
@@ -244,9 +254,13 @@ class ObjectClient:
 
             object_exists_flag = output[0][0]
 
-            if object_exists_flag == 0 and os.path.exists(STORAGE_PATH + "/" + self.object_name):
+            if object_exists_flag == 0 and os.path.exists(
+                STORAGE_PATH + "/" + self.object_name
+            ):
                 return True
-            if object_exists_flag == 0 and not os.path.exists(STORAGE_PATH + "/" + self.object_name):
+            if object_exists_flag == 0 and not os.path.exists(
+                STORAGE_PATH + "/" + self.object_name
+            ):
                 return 3
             if object_exists_flag == 1:
                 return 1
