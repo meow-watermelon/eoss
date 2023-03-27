@@ -76,11 +76,11 @@ def process_object(object_filename):
         if object_exists_flag is False:
             return ("Object Does Not Exist", 404)
         if object_exists_flag == 1:
-            return ("Object Initialized Only", 409)
+            return ("Object Initialized Only", 440)
         if object_exists_flag == 2:
-            return ("Object Saved Not Closed", 409)
+            return ("Object Saved Not Closed", 441)
         if object_exists_flag == 3:
-            return ("Object MDS Closed Not In Local", 404)
+            return ("Object MDS Closed Not In Local", 524)
 
     if request.method == "GET":
         pass
