@@ -33,6 +33,10 @@ def process_object(object_filename):
     if request.method not in ("GET", "HEAD", "DELETE", "PUT"):
         return ("Bad Request", 400)
 
+    # check if SAFEMODE is enabled
+    if (request.method in ("DELETE", "PUT")) and SAFEMODE:
+        return ("EOSS Safemode Enabled", 525)
+
     # HTTP methods usage
     # GET: get object
     # HEAD: check if object exists
