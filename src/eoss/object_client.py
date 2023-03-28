@@ -17,13 +17,21 @@ log = logger.Logger(__name__, object_log)
 
 class ObjectClient:
     def __init__(self, object_filename, *, object_version=None):
-        self.object_filename = object_filename
-        self.object_version = object_version
+        self._object_filename = object_filename
+        self._object_version = object_version
         log.info(self.__repr__())
         self.mds_client = mds_client.MDSClient()
 
     def __repr__(self):
         return f"object filename: {self.object_filename}; object name: {self.object_name}; object version: {self.object_version}"
+
+    @property
+    def object_filename(self):
+        return self._object_filename
+
+    @property
+    def object_version(self):
+        return self._object_version
 
     @property
     def object_name(self):
