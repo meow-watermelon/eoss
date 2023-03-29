@@ -1,0 +1,14 @@
+/eoss/v1/stats [GET]
+/eoss/v1/object/<object_name> [GET/PUT/HEAD/DELETE]
+
+HTTP Response Codes
+
+440 - Object Initialized Only
+441 - Object Saved Not Closed
+
+520 - MDS Connection Failure
+521 - MDS Execution Failure
+522 - MDS Commit Failure
+523 - EOSS Internal Exception Failure
+524 - EOSS Inconsistent Condition Failure
+525 - EOSS Safemode Enabled
