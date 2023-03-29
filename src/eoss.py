@@ -61,6 +61,7 @@ def process_object(object_filename):
         log.error(f"failed to connect to metadata database: {str(e)}")
         return ("MDS Connection Failure", 520)
 
+    # HEAD method
     if request.method == "HEAD":
         try:
             object_exists_flag = eoss_object_client.check_object_exists()
@@ -86,12 +87,59 @@ def process_object(object_filename):
         if object_exists_flag == 3:
             return ("Object MDS Closed Not In Local", 524)
 
+    # GET method
     if request.method == "GET":
         pass
 
+    # DELETE method
     if request.method == "DELETE":
-        pass
+        try:
+            object_exists_flag = eoss_object_client.check_object_exists()
+        except MDSExecuteException as e:
+            log.error(f"failed to execute SQL query: {e}")
+            return ("MDS Execution Failure", 521)
+        except EOSSInternalException as e:
+            log.error(
+                f"uncaught issue when acquiring object {eoss_object_client.object_name} state"
+            )
+            return ("EOSS Internal Exception Failure", 523)
 
+        if object_exists_flag is True:
+            try:
+                eoss_object_client.delete_object()
+            except EOSSInternalException as e:
+                log.error(
+                    f"uncaught issue when deleting object {eoss_object_client.object_name}: {e}"
+                )
+                return ("EOSS Internal Exception Failure", 523)
+            except MDSExecuteException as e:
+                log.error(
+                    f"failed to delete object record {eoss_object_client.object_name}: {e}"
+                )
+                return ("MDS Execution Failure", 521)
+            except MDSCommitException as e:
+                log.error(
+                    f"failed to commit deletion on object {eoss_object_client.object_name}: {e}"
+                )
+                return ("MDS Commit Failure", 522)
+
+            eoss_object_client.close_mds()
+            log.info(f"object {eoss_object_client.object_name} is deleted")
+
+            return ("Object Deleted", 200)
+        else:
+            eoss_object_client.close_mds()
+
+            if object_exists_flag is False:
+                return ("Object Does Not Exist", 404)
+            if object_exists_flag == 1:
+                return ("Object Initialized Only", 440)
+            if object_exists_flag == 2:
+                return ("Object Saved Not Closed", 441)
+            if object_exists_flag == 3:
+                return ("Object MDS Closed Not In Local", 524)
+
+    # PUT method
     if request.method == "PUT":
         pass
 
@@ -176,6 +224,7 @@ def after_request(response):
     access_log.info(
         f"{request_id} {latency} {request.remote_addr} {request.method} {request.path} {response.status_code} {request.user_agent}"
     )
+
     return response
 
 

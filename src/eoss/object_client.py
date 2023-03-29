@@ -158,6 +158,7 @@ class ObjectClient:
     def delete_object(self):
         """
         delete object file and remove record from MDS
+        this method can only delete fully closed object
         """
         try:
             os.unlink(STORAGE_PATH + "/" + self.object_name)
