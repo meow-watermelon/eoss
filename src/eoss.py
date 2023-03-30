@@ -17,6 +17,7 @@ from flask import Flask
 from flask import g
 from flask import jsonify
 from flask import request
+from flask import send_file
 from werkzeug.serving import WSGIRequestHandler
 
 # set up loggers
@@ -49,12 +50,14 @@ def process_object(object_filename):
     else:
         object_version = None
 
-    log.info(f"object_filename: {object_filename} object_version: {object_version}")
-
     # initialize object client
     eoss_object_client = object_client.ObjectClient(
         object_filename, object_version=object_version
     )
+    log.info(
+        f"object_filename: {object_filename} object_version: {object_version} object_name: {eoss_object_client.object_name}"
+    )
+
     try:
         eoss_object_client.init_mds()
     except MDSConnectException as e:
@@ -89,7 +92,39 @@ def process_object(object_filename):
 
     # GET method
     if request.method == "GET":
-        pass
+        try:
+            object_exists_flag = eoss_object_client.check_object_exists()
+        except MDSExecuteException as e:
+            log.error(f"failed to execute SQL query: {e}")
+            return ("MDS Execution Failure", 521)
+        except EOSSInternalException as e:
+            log.error(
+                f"uncaught issue when acquiring object {eoss_object_client.object_name} state"
+            )
+            return ("EOSS Internal Exception Failure", 523)
+
+        eoss_object_client.close_mds()
+
+        if object_exists_flag is True:
+            try:
+                return send_file(
+                    STORAGE_PATH + "/" + eoss_object_client.object_name,
+                    as_attachment=True,
+                    attachment_filename=object_filename,
+                )
+            except Exception as e:
+                log.error(
+                    f"failed to download object {object_filename} - object_name: {eoss_object_client.object_name}: {e}"
+                )
+                return ("EOSS Internal Exception Failure", 523)
+        if object_exists_flag is False:
+            return ("Object Does Not Exist", 404)
+        if object_exists_flag == 1:
+            return ("Object Initialized Only", 440)
+        if object_exists_flag == 2:
+            return ("Object Saved Not Closed", 441)
+        if object_exists_flag == 3:
+            return ("Object MDS Closed Not In Local", 524)
 
     # DELETE method
     if request.method == "DELETE":
