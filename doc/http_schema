@@ -5,6 +5,7 @@ HTTP Response Codes
 
 440 - Object Initialized Only
 441 - Object Saved Not Closed
+442 - Object Exists Already
 
 520 - MDS Connection Failure
 521 - MDS Execution Failure
@@ -12,3 +13,5 @@ HTTP Response Codes
 523 - EOSS Internal Exception Failure
 524 - EOSS Inconsistent Condition Failure
 525 - EOSS Safemode Enabled
+526 - EOSS Rollback Done
+527 - EOSS Rollback Failed

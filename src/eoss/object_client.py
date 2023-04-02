@@ -11,7 +11,7 @@ from .exceptions import MDSExecuteException
 from .exceptions import MDSCommitException
 from .exceptions import EOSSInternalException
 
-object_log = LOGGING_PATH + "/" + "object.log"
+object_log = os.path.join(LOGGING_PATH, "object.log")
 log = logger.Logger(__name__, object_log)
 
 
@@ -90,7 +90,7 @@ class ObjectClient:
         size = None
 
         try:
-            size = os.path.getsize(STORAGE_PATH + "/" + self.object_name)
+            size = os.path.getsize(os.path.join(STORAGE_PATH, self.object_name))
         except OSError as e:
             log.warning(f"failed to get size of object {self.object_name}: {e}")
         else:
@@ -161,7 +161,7 @@ class ObjectClient:
         this method can only delete fully closed object
         """
         try:
-            os.unlink(STORAGE_PATH + "/" + self.object_name)
+            os.unlink(os.path.join(STORAGE_PATH, self.object_name))
         except Exception as e:
             log.error(f"failed to delete object file {self.object_name}: {e}")
             raise EOSSInternalException(e)
@@ -191,8 +191,8 @@ class ObjectClient:
         rollback_flag = 0
 
         for object_file in (
-            STORAGE_PATH + "/" + self.object_name,
-            STORAGE_PATH + "/" + self.object_name + ".temp",
+            os.path.join(STORAGE_PATH, self.object_name),
+            os.path.join(STORAGE_PATH, self.object_name + ".temp"),
         ):
             if os.path.exists(object_file):
                 try:
@@ -264,11 +264,11 @@ class ObjectClient:
             object_exists_flag = output[0][0]
 
             if object_exists_flag == 0 and os.path.exists(
-                STORAGE_PATH + "/" + self.object_name
+                os.path.join(STORAGE_PATH, self.object_name)
             ):
                 return True
             if object_exists_flag == 0 and not os.path.exists(
-                STORAGE_PATH + "/" + self.object_name
+                os.path.join(STORAGE_PATH, self.object_name)
             ):
                 return 3
             if object_exists_flag == 1:

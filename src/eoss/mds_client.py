@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from . import logger
 from . import LOGGING_PATH
@@ -8,7 +9,7 @@ from .exceptions import MDSExecuteException
 from .exceptions import MDSCommitException
 from .exceptions import EOSSInternalException
 
-mds_client_log = LOGGING_PATH + "/" + "mds_client.log"
+mds_client_log = os.path.join(LOGGING_PATH, "mds_client.log")
 log = logger.Logger(__name__, mds_client_log)
 
 

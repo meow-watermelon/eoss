@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import time
 from eoss import logger
 from eoss import mds_client
@@ -19,10 +20,11 @@ from flask import jsonify
 from flask import request
 from flask import send_file
 from werkzeug.serving import WSGIRequestHandler
+from werkzeug.utils import secure_filename
 
 # set up loggers
-log = logger.Logger(__name__, LOGGING_PATH + "/" + "eoss.log")
-access_log = logger.AccessLogger("access_log", LOGGING_PATH + "/" + "access.log")
+log = logger.Logger(__name__, os.path.join(LOGGING_PATH, "eoss.log"))
+access_log = logger.AccessLogger("access_log", os.path.join(LOGGING_PATH, "access.log"))
 
 app = Flask(__name__)
 
@@ -64,19 +66,20 @@ def process_object(object_filename):
         log.error(f"failed to connect to metadata database: {str(e)}")
         return ("MDS Connection Failure", 520)
 
+    # retrieve object existence state
+    try:
+        object_exists_flag = eoss_object_client.check_object_exists()
+    except MDSExecuteException as e:
+        log.error(f"failed to execute SQL query: {e}")
+        return ("MDS Execution Failure", 521)
+    except EOSSInternalException as e:
+        log.error(
+            f"uncaught issue when acquiring object {eoss_object_client.object_name} state"
+        )
+        return ("EOSS Internal Exception Failure", 523)
+
     # HEAD method
     if request.method == "HEAD":
-        try:
-            object_exists_flag = eoss_object_client.check_object_exists()
-        except MDSExecuteException as e:
-            log.error(f"failed to execute SQL query: {e}")
-            return ("MDS Execution Failure", 521)
-        except EOSSInternalException as e:
-            log.error(
-                f"uncaught issue when acquiring object {eoss_object_client.object_name} state"
-            )
-            return ("EOSS Internal Exception Failure", 523)
-
         eoss_object_client.close_mds()
 
         if object_exists_flag is True:
@@ -92,23 +95,12 @@ def process_object(object_filename):
 
     # GET method
     if request.method == "GET":
-        try:
-            object_exists_flag = eoss_object_client.check_object_exists()
-        except MDSExecuteException as e:
-            log.error(f"failed to execute SQL query: {e}")
-            return ("MDS Execution Failure", 521)
-        except EOSSInternalException as e:
-            log.error(
-                f"uncaught issue when acquiring object {eoss_object_client.object_name} state"
-            )
-            return ("EOSS Internal Exception Failure", 523)
-
         eoss_object_client.close_mds()
 
         if object_exists_flag is True:
             try:
                 return send_file(
-                    STORAGE_PATH + "/" + eoss_object_client.object_name,
+                    os.path.join(STORAGE_PATH, eoss_object_client.object_name),
                     as_attachment=True,
                     attachment_filename=object_filename,
                 )
@@ -128,17 +120,6 @@ def process_object(object_filename):
 
     # DELETE method
     if request.method == "DELETE":
-        try:
-            object_exists_flag = eoss_object_client.check_object_exists()
-        except MDSExecuteException as e:
-            log.error(f"failed to execute SQL query: {e}")
-            return ("MDS Execution Failure", 521)
-        except EOSSInternalException as e:
-            log.error(
-                f"uncaught issue when acquiring object {eoss_object_client.object_name} state"
-            )
-            return ("EOSS Internal Exception Failure", 523)
-
         if object_exists_flag is True:
             try:
                 eoss_object_client.delete_object()
@@ -176,7 +157,90 @@ def process_object(object_filename):
 
     # PUT method
     if request.method == "PUT":
-        pass
+        # PUT method is only available when object does not exist
+        if object_exists_flag is False:
+            # initialize object metadata
+            try:
+                eoss_object_client.set_object_init_data()
+            except MDSExecuteException as e:
+                log.error(
+                    f"failed to set initial object data for object {eoss_object_client.object_name}"
+                )
+                return ("MDS Execution Failure", 521)
+            except MDSCommitException as e:
+                log.error(
+                    f"failed to commit initial object data for object {eoss_object_client.object_name}"
+                )
+                return ("MDS Commit Failure", 522)
+
+            # state 1 phase
+            eoss_object_client.set_object_state(1)
+
+            # write data to temp file
+            try:
+                with open(
+                    os.path.join(
+                        STORAGE_PATH, eoss_object_client.object_name + ".temp"
+                    ),
+                    "wb+",
+                ) as f:
+                    f.write(request.data)
+            except Exception as e:
+                log.error(
+                    f"failed to write object data to {eoss_object_client.object_name} temp file: {e}"
+                )
+                rollback_flag = eoss_object_client.rollback()
+                eoss_object_client.close_mds()
+
+                if rollback_flag:
+                    return ("EOSS Rollback Done", 526)
+                else:
+                    return ("EOSS Rollback Failed", 527)
+
+            # state 2 phase
+            eoss_object_client.set_object_state(2)
+
+            # rename temp file to final object name
+            try:
+                os.rename(
+                    os.path.join(
+                        STORAGE_PATH, eoss_object_client.object_name + ".temp"
+                    ),
+                    os.path.join(STORAGE_PATH, eoss_object_client.object_name),
+                )
+            except Exception as e:
+                log.error(
+                    f"failed to write object data to {eoss_object_client.object_name} final file: {e}"
+                )
+                rollback_flag = eoss_object_client.rollback()
+                eoss_object_client.close_mds()
+
+                if rollback_flag:
+                    return ("EOSS Rollback Done", 526)
+                else:
+                    return ("EOSS Rollback Failed", 527)
+
+            # set up object size
+            eoss_object_client.set_object_size()
+
+            # set up latest update timestamp
+            eoss_object_client.set_object_timestamp()
+
+            # state 3 phase
+            eoss_object_client.set_object_state(0)
+
+            return ("Object Uploaded", 200)
+        else:
+            eoss_object_client.close_mds()
+
+            if object_exists_flag is True:
+                return ("Object Exists Already", 442)
+            if object_exists_flag == 1:
+                return ("Object Initialized Only", 440)
+            if object_exists_flag == 2:
+                return ("Object Saved Not Closed", 441)
+            if object_exists_flag == 3:
+                return ("Object MDS Closed Not In Local", 524)
 
 
 @app.route("/eoss/v1/stats", methods=["GET"])
