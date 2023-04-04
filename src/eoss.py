@@ -182,7 +182,7 @@ def process_object(object_filename):
                     os.path.join(
                         STORAGE_PATH, eoss_object_client.object_name + ".temp"
                     ),
-                    "wb+",
+                    "wb",
                 ) as f:
                     f.write(request.data)
             except Exception as e:
