@@ -102,7 +102,7 @@ def process_object(object_filename):
                 return send_file(
                     os.path.join(STORAGE_PATH, eoss_object_client.object_name),
                     as_attachment=True,
-                    attachment_filename=object_filename,
+                    download_name=object_filename,
                 )
             except Exception as e:
                 log.error(
@@ -174,7 +174,19 @@ def process_object(object_filename):
                 return ("MDS Commit Failure", 522)
 
             # state 1 phase
-            eoss_object_client.set_object_state(1)
+            try:
+                eoss_object_client.set_object_state(1)
+            except Exception as e:
+                log.error(
+                    f"failed to set object state 1 for object {eoss_object_client.object_name}: {e}"
+                )
+                rollback_flag = eoss_object_client.rollback()
+                eoss_object_client.close_mds()
+
+                if rollback_flag:
+                    return ("EOSS Rollback Done", 526)
+                else:
+                    return ("EOSS Rollback Failed", 527)
 
             # write data to temp file
             try:
@@ -198,7 +210,19 @@ def process_object(object_filename):
                     return ("EOSS Rollback Failed", 527)
 
             # state 2 phase
-            eoss_object_client.set_object_state(2)
+            try:
+                eoss_object_client.set_object_state(2)
+            except Exception as e:
+                log.error(
+                    f"failed to set object state 2 for object {eoss_object_client.object_name}: {e}"
+                )
+                rollback_flag = eoss_object_client.rollback()
+                eoss_object_client.close_mds()
+
+                if rollback_flag:
+                    return ("EOSS Rollback Done", 526)
+                else:
+                    return ("EOSS Rollback Failed", 527)
 
             # rename temp file to final object name
             try:
@@ -210,7 +234,7 @@ def process_object(object_filename):
                 )
             except Exception as e:
                 log.error(
-                    f"failed to write object data to {eoss_object_client.object_name} final file: {e}"
+                    f"failed to rename temp file to final file for object {eoss_object_client.object_name}: {e}"
                 )
                 rollback_flag = eoss_object_client.rollback()
                 eoss_object_client.close_mds()
@@ -226,8 +250,20 @@ def process_object(object_filename):
             # set up latest update timestamp
             eoss_object_client.set_object_timestamp()
 
-            # state 3 phase
-            eoss_object_client.set_object_state(0)
+            # state 0 phase
+            try:
+                eoss_object_client.set_object_state(0)
+            except Exception as e:
+                log.error(
+                    f"failed to set object state 0 for object {eoss_object_client.object_name}: {e}"
+                )
+                rollback_flag = eoss_object_client.rollback()
+                eoss_object_client.close_mds()
+
+                if rollback_flag:
+                    return ("EOSS Rollback Done", 526)
+                else:
+                    return ("EOSS Rollback Failed", 527)
 
             return ("Object Uploaded", 200)
         else:
@@ -282,6 +318,10 @@ def get_eoss_object_stats():
         return ("MDS Execution Failure", 520)
     else:
         total_storage_usage = mds_output[0][0]
+
+        if total_storage_usage is None:
+            total_storage_usage = 0
+
         output["total_storage_usage"] = total_storage_usage
 
     # get youngest and oldest timestamps for objects

@@ -148,12 +148,14 @@ class ObjectClient:
                 (state, self.object_name),
             )
         except MDSExecuteException as e:
-            log.warning(f"failed to set state on object {self.object_name}: {e}")
-        else:
-            try:
-                self.mds_client.commit()
-            except MDSCommitException as e:
-                log.warning(f"failed to commit state of object {self.object_name}: {e}")
+            log.error(f"failed to set state on object {self.object_name}: {e}")
+            raise MDSExecuteException(e)
+
+        try:
+            self.mds_client.commit()
+        except MDSCommitException as e:
+            log.error(f"failed to commit state of object {self.object_name}: {e}")
+            raise MDSCommitException(e)
 
     def delete_object(self):
         """
