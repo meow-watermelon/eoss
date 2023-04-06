@@ -34,10 +34,12 @@ app = Flask(__name__)
 )
 def process_object(object_filename):
     if request.method not in ("GET", "HEAD", "DELETE", "PUT"):
+        log.warning("request method {request.method} is not allowed, ignored")
         return ("Bad Method", 405)
 
     # check if SAFEMODE is enabled
     if (request.method in ("DELETE", "PUT")) and SAFEMODE:
+        log.info("safemode is enabled, DELETE and PUT methods are not usable")
         return ("EOSS Safemode Enabled", 525)
 
     # HTTP methods usage
@@ -65,6 +67,8 @@ def process_object(object_filename):
     except MDSConnectException as e:
         log.error(f"failed to connect to metadata database: {str(e)}")
         return ("MDS Connection Failure", 520)
+    else:
+        log.info("metadata database initialized")
 
     # retrieve object existence state
     try:
@@ -77,6 +81,15 @@ def process_object(object_filename):
             f"uncaught issue when acquiring object {eoss_object_client.object_name} state"
         )
         return ("EOSS Internal Exception Failure", 523)
+    else:
+        log.info(
+            f"object existence flag for object {eoss_object_client.object_name} is {object_exists_flag}"
+        )
+
+    # log request method
+    log.info(
+        f"HTTP request method {request.method} detected for object {eoss_object_client.object_name}"
+    )
 
     # HEAD method
     if request.method == "HEAD":
@@ -172,6 +185,10 @@ def process_object(object_filename):
                     f"failed to commit initial object data for object {eoss_object_client.object_name}"
                 )
                 return ("MDS Commit Failure", 522)
+            else:
+                log.info(
+                    f"initial data for object {eoss_object_client.object_name} set done"
+                )
 
             # state 1 phase
             try:
@@ -187,6 +204,8 @@ def process_object(object_filename):
                     return ("EOSS Rollback Done", 526)
                 else:
                     return ("EOSS Rollback Failed", 527)
+            else:
+                log.info(f"object {eoss_object_client.object_name} state initialized")
 
             # write data to temp file
             try:
@@ -208,6 +227,10 @@ def process_object(object_filename):
                     return ("EOSS Rollback Done", 526)
                 else:
                     return ("EOSS Rollback Failed", 527)
+            else:
+                log.info(
+                    f"object {eoss_object_client.object_name} data is saved in temp file"
+                )
 
             # state 2 phase
             try:
@@ -223,6 +246,10 @@ def process_object(object_filename):
                     return ("EOSS Rollback Done", 526)
                 else:
                     return ("EOSS Rollback Failed", 527)
+            else:
+                log.info(
+                    f"set object state 2 for object {eoss_object_client.object_name} as temp file is saved already"
+                )
 
             # rename temp file to final object name
             try:
@@ -243,12 +270,18 @@ def process_object(object_filename):
                     return ("EOSS Rollback Done", 526)
                 else:
                     return ("EOSS Rollback Failed", 527)
+            else:
+                log.info(
+                    f"renamed temp file to final file for object {eoss_object_client.object_name}"
+                )
 
             # set up object size
             eoss_object_client.set_object_size()
+            log.info(f"set size for object {eoss_object_client.object_name}")
 
             # set up latest update timestamp
             eoss_object_client.set_object_timestamp()
+            log.info(f"set timestamp for object {eoss_object_client.object_name}")
 
             # state 0 phase
             try:
@@ -264,6 +297,10 @@ def process_object(object_filename):
                     return ("EOSS Rollback Done", 526)
                 else:
                     return ("EOSS Rollback Failed", 527)
+            else:
+                log.info(
+                    f"object {eoss_object_client.object_name} is saved and metadata database is updated in final state"
+                )
 
             return ("Object Uploaded", 200)
         else:
