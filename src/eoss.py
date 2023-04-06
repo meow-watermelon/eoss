@@ -333,11 +333,26 @@ def get_eoss_object_stats():
         log.error(f"failed to execute SQL query: {e}")
         return ("MDS Execution Failure", 520)
     else:
-        log.info(f"{mds_output}")
         youngest_object_updated_timestamp = mds_output[0][0]
         oldest_object_updated_timestamp = mds_output[1][0]
         output["youngest_object_updated_timestamp"] = youngest_object_updated_timestamp
         output["oldest_object_updated_timestamp"] = oldest_object_updated_timestamp
+
+    # get object state stats
+    try:
+        mds_output = mds.execute(
+            f"SELECT COUNT(state) FROM {METADATA_DB_TABLE} WHERE STATE = 0 UNION ALL SELECT COUNT(state) FROM {METADATA_DB_TABLE} WHERE STATE = 1 UNION ALL SELECT COUNT(state) FROM {METADATA_DB_TABLE} WHERE STATE = 2"
+        ).fetchall()
+    except MDSExecuteException as e:
+        log.error(f"failed to execute SQL query: {e}")
+        return ("MDS Execution Failure", 520)
+    else:
+        object_uploaded = mds_output[0][0]
+        object_uploading_init = mds_output[1][0]
+        object_saved_in_temp_name = mds_output[2][0]
+        output["number_object_uploaded"] = object_uploaded
+        output["number_object_upload_init"] = object_uploading_init
+        output["number_object_saved_in_temp_name"] = object_saved_in_temp_name
 
     mds.close()
 
