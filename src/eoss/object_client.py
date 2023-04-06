@@ -11,8 +11,8 @@ from .exceptions import MDSExecuteException
 from .exceptions import MDSCommitException
 from .exceptions import EOSSInternalException
 
-object_log = os.path.join(LOGGING_PATH, "object.log")
-log = logger.Logger(__name__, object_log)
+object_client_log = os.path.join(LOGGING_PATH, "object_client.log")
+log = logger.Logger(__name__, object_client_log)
 
 
 class ObjectClient:
