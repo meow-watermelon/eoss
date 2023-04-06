@@ -34,7 +34,7 @@ app = Flask(__name__)
 )
 def process_object(object_filename):
     if request.method not in ("GET", "HEAD", "DELETE", "PUT"):
-        return ("Bad Request", 400)
+        return ("Bad Method", 405)
 
     # check if SAFEMODE is enabled
     if (request.method in ("DELETE", "PUT")) and SAFEMODE:
@@ -282,7 +282,7 @@ def process_object(object_filename):
 @app.route("/eoss/v1/stats", methods=["GET"])
 def get_eoss_object_stats():
     if request.method != "GET":
-        return ("Bad Request", 400)
+        return ("Bad Method", 405)
 
     output = {}
     mds = mds_client.MDSClient()
