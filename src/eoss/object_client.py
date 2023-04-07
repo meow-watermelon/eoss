@@ -189,6 +189,9 @@ class ObjectClient:
         """
         rollback uploading procedure
         this method should only run when uploading procedure or other MDS calls failed
+        rollback procedure:
+        1. delete saved files including temp one
+        2. delete row from metadata database
         """
         rollback_flag = 0
 
