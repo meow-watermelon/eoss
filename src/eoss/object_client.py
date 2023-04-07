@@ -42,7 +42,7 @@ class ObjectClient:
             self.mds_client.connect()
         except MDSConnectException as e:
             log.error(f"unable to connect to metadata database: {str(e)}")
-            raise MDSConnectException
+            raise MDSConnectException(e)
 
         self.mds_client.cursor()
         log.info("metadata database initialized")
@@ -71,7 +71,7 @@ class ObjectClient:
             log.error(
                 f"failed to set initial object data for object {self.object_name}"
             )
-            raise MDSExecuteException
+            raise MDSExecuteException(e)
 
         try:
             self.mds_client.commit()
@@ -79,7 +79,7 @@ class ObjectClient:
             log.error(
                 f"failed to commit initial object data for object {self.object_name}"
             )
-            raise MDSCommitException
+            raise MDSCommitException(e)
 
         log.info(f"object {self.object_name} initialized done in MDS database")
 
@@ -256,11 +256,11 @@ class ObjectClient:
             log.error(
                 f"failed to access MDS to acquire object {self.object_name} state: {e}"
             )
-            raise MDSExecuteException
+            raise MDSExecuteException(e)
 
         if output is None:
             log.error(f"uncaught issue when acquiring object {self.object_name} state")
-            raise EOSSInternalException
+            raise EOSSInternalException("uncaught non-state exception")
         else:
             # check if output is empty list
             if isinstance(output, list) and len(output) == 0:

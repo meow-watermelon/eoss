@@ -20,7 +20,6 @@ from flask import jsonify
 from flask import request
 from flask import send_file
 from werkzeug.serving import WSGIRequestHandler
-from werkzeug.utils import secure_filename
 
 # set up loggers
 log = logger.Logger(__name__, os.path.join(LOGGING_PATH, "eoss.log"))
