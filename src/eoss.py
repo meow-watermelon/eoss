@@ -25,6 +25,9 @@ from werkzeug.serving import WSGIRequestHandler
 log = logger.Logger(__name__, os.path.join(LOGGING_PATH, "eoss.log"))
 access_log = logger.AccessLogger("access_log", os.path.join(LOGGING_PATH, "access.log"))
 
+# enable HTTP/1.1
+WSGIRequestHandler.protocol_version = "HTTP/1.0"
+
 app = Flask(__name__)
 
 
@@ -439,8 +442,3 @@ def internal_error(exception):
 @app.errorhandler(404)
 def return_403(error):
     return ("", 403)
-
-
-if __name__ == "__main__":
-    # enable HTTP/1.1
-    WSGIRequestHandler.protocol_version = "HTTP/1.1"
