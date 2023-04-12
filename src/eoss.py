@@ -304,7 +304,7 @@ def process_object(object_filename):
                     f"object {eoss_object_client.object_name} is saved and metadata database is updated in final state"
                 )
 
-            return ("Object Uploaded", 200)
+            return ("Object Uploaded", 201)
         else:
             eoss_object_client.close_mds()
 
