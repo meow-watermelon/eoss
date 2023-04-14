@@ -95,7 +95,7 @@ if __name__ == "__main__":
     flag = clean_up_eoss()
 
     if flag:
-        print(f"EOSS cleaned up is done")
+        print(f"EOSS clean up is done")
     else:
         print(f"ERROR: unable to clean up EOSS leftover data", file=sys.stderr)
         sys.exit(2)
