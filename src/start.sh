@@ -35,5 +35,5 @@ then
 fi
 
 # start EOSS service
-echo "##### Trigger Pre-Start Procedure #####\n"
+echo -e "##### Trigger Pre-Start Procedure #####\n"
 exec uwsgi ../config/eoss-uwsgi.ini
