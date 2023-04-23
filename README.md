@@ -254,6 +254,64 @@ $ curl http://localhost:4080/eoss/v1/stats -s | json_pp
 
 ## Installation
 
-## Configuration
+1. Clone the git repository
+
+2. Modify `config_file_path` variable in `src/eoss/__init__.py` to specify correct location for `eoss.yaml`.
+
+3. Modify the `config/eoss.yaml` configuration file with proper settings. The file controls EOSS backend service settings.
+
+`VERSION_SALT`: object version salt. default value is the string `snoopy`
+
+`STROAGE_PATH`: file path location to store objects
+
+`METADATA_DB_PATH`: metadata database file location
+
+`METADATA_DB_TABLE`: metadata database table name. default value is the string `metadata`
+
+`LOGGING_PATH`: EOSS service logging path to store log files
+
+`LOG_BACKUP_COUNT`: logging rotation count. default value is 10
+
+`LOG_MAX_BYTES`: maximum size of each log file. default value is 1 GB
+
+`SAFEMODE`: safe mode flag. default value is `False`
+
+4. Modify the `config/eoss-uwsgi.ini` configuration file with proper settings. This file controls EOSS HTTP service settings.
+
+`chdir`: file path that points `src` directory
+
+5. Go to `src` directory and run `bootstrap-env.py` command. This command will bootstrap and create metadata database and necessary directories.
+
+6. Go to `src` directory and run `start.sh` to start EOSS service. This script will trigger `pre-start.py` first to check and clean up EOSS environment then it will bring up the WSGI HTTP service.
+
+## Logging
+
+There are 4 logs for EOSS service.
+
+`mds_client.log`: MDS database operations log
+
+`object_client.log`: object operations log
+
+`eoss.log`: EOSS main service log
+
+`access.log`: WSGI HTTP service log
+
+##### Access Log Format
+
+```
+<request_id> <latency> <request remote address> <http request method> <http request path> <http response code> <http request user agent>
+```
+
+##### Access Log Example
+
+```
+2023-04-11 21:27:59,538 61c439e6-8f5d-4764-bea0-0a385c334d3e 1215 127.0.0.1 PUT /eoss/v1/object/testfile100m 200 curl/7.85.0
+```
 
 ## TODO
+
+* UTF-8 support
+* Allow users to re-upload the same object without extra object deleting cycle
+* Add more integration testings for the service
+
+This object storage service is my experimental project, please feel free to submit a bug or feature request. Thanks!
