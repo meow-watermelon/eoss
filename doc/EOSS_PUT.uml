@@ -1,0 +1,22 @@
+@startuml
+title EOSS PUT Sequence
+
+actor User
+User -> "EOSS Service Layer": initiate request
+"EOSS Service Layer" -> "EOSS Service Layer": generate object metadata
+"EOSS Service Layer" -> "Metadata Database": confim if object exists
+"Metadata Database" --> "EOSS Service Layer": response
+"EOSS Service Layer" -> "Metadata Database": set object initialized data
+"Metadata Database" --> "EOSS Service Layer": response
+"EOSS Service Layer" -> "Metadata Database": set object state to phase 1
+"Metadata Database" --> "EOSS Service Layer": response
+"EOSS Service Layer" -> "Storage Layer": write object data to temp file
+"Storage Layer" --> "EOSS Service Layer": response
+"EOSS Service Layer" -> "Metadata Database": set object state to phase 2
+"Metadata Database" --> "EOSS Service Layer": response
+"EOSS Service Layer" -> "Storage Layer": rename object temp file to finalized object name
+"Storage Layer" --> "EOSS Service Layer": response
+"EOSS Service Layer" -> "Metadata Database": set object state to phase 0
+"Metadata Database" --> "EOSS Service Layer": response
+"EOSS Service Layer" --> User: return HTTP 201 response code
+@enduml

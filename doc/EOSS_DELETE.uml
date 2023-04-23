@@ -1,0 +1,14 @@
+@startuml
+title EOSS DELETE Sequence
+
+actor User
+User -> "EOSS Service Layer": initiate request
+"EOSS Service Layer" -> "EOSS Service Layer": generate object metadata
+"EOSS Service Layer" -> "Metadata Database": confim if object exists
+"Metadata Database" --> "EOSS Service Layer": response
+"EOSS Service Layer" -> "Storage Layer": delete object
+"Storage Layer" --> "EOSS Service Layer": response
+"EOSS Service Layer" -> "Metadata Database": delete object record
+"Metadata Database" --> "EOSS Service Layer": response
+"EOSS Service Layer" -> User: return HTTP 200 response code
+@enduml
