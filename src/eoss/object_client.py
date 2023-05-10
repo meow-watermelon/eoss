@@ -230,7 +230,7 @@ class ObjectClient:
             return True
         else:
             log.warning(
-                "[ROLLBACK] rollback procedure on object {self.object_name} failed"
+                f"[ROLLBACK] rollback procedure on object {self.object_name} failed"
             )
             return False
 

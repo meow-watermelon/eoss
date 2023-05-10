@@ -90,6 +90,8 @@ def clean_up_eoss():
         )
         return False
 
+    return True
+
 
 if __name__ == "__main__":
     flag = clean_up_eoss()
