@@ -3,6 +3,7 @@ STORAGE_PATH: "/home/ericlee/EOSS/data"
 METADATA_DB_PATH: "/home/ericlee/EOSS/mds/mds.sql"
 METADATA_DB_TABLE: "metadata"
 LOGGING_PATH: "/home/ericlee/EOSS/log"
+OBJECT_LOCK_PATH: "/home/ericlee/EOSS/lock"
 LOG_BACKUP_COUNT: 10
 LOG_MAX_BYTES: 1073741824
 SAFEMODE: False

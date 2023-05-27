@@ -5,6 +5,7 @@ import sys
 from eoss import LOGGING_PATH
 from eoss import METADATA_DB_PATH
 from eoss import METADATA_DB_TABLE
+from eoss import OBJECT_LOCK_PATH 
 from eoss import STORAGE_PATH
 from eoss.exceptions import MDSConnectException
 from eoss.exceptions import MDSExecuteException
@@ -56,7 +57,7 @@ def bootstrap_mds(mds_table):
 
 if __name__ == "__main__":
     # create directories
-    for eoss_dir in (LOGGING_PATH, os.path.dirname(METADATA_DB_PATH), STORAGE_PATH):
+    for eoss_dir in (LOGGING_PATH, os.path.dirname(METADATA_DB_PATH), STORAGE_PATH, OBJECT_LOCK_PATH):
         try:
             os.makedirs(eoss_dir, exist_ok=True)
         except Exception as e:

@@ -12,3 +12,7 @@ class MDSCommitException(Exception):
 
 class EOSSInternalException(Exception):
     pass
+
+
+class ObjectUnderLockException(Exception):
+    pass
