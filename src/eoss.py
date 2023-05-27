@@ -14,6 +14,7 @@ from eoss.exceptions import MDSConnectException
 from eoss.exceptions import MDSExecuteException
 from eoss.exceptions import MDSCommitException
 from eoss.exceptions import EOSSInternalException
+from eoss.exceptions import ObjectUnderLockException
 from flask import Flask
 from flask import g
 from flask import jsonify
@@ -111,9 +112,17 @@ def process_object(object_filename):
     # GET method
     if request.method == "GET":
         eoss_object_client.close_mds()
+        # set read lock
+        try:
+            eoss_object_client.set_read_lock()
+        except ObjectUnderLockException as e:
+            log.info(f"object {eoss_object_client.object_name} read lock bailed")
+            return ("Object Read Conflict", 409)
 
         if object_exists_flag is True:
+            # download object
             try:
+                eoss_object_client.remove_lock()
                 return send_file(
                     os.path.join(STORAGE_PATH, eoss_object_client.object_name),
                     as_attachment=True,
@@ -123,43 +132,61 @@ def process_object(object_filename):
                 log.error(
                     f"failed to download object {object_filename} - object_name: {eoss_object_client.object_name}: {e}"
                 )
+                eoss_object_client.remove_lock()
                 return ("EOSS Internal Exception Failure", 523)
         if object_exists_flag is False:
+            eoss_object_client.remove_lock()
             return ("Object Does Not Exist", 404)
         if object_exists_flag == 1:
+            eoss_object_client.remove_lock()
             return ("Object Initialized Only", 440)
         if object_exists_flag == 2:
+            eoss_object_client.remove_lock()
             return ("Object Saved Not Closed", 441)
         if object_exists_flag == 3:
+            eoss_object_client.remove_lock()
             return ("Object MDS Closed Not In Local", 524)
 
     # DELETE method
     if request.method == "DELETE":
+        # set write lock
+        try:
+            eoss_object_client.set_write_lock()
+        except ObjectUnderLockException as e:
+            log.info(f"object {eoss_object_client.object_name} write lock bailed")
+            return ("Object Write Conflict", 409)
+
         if object_exists_flag is True:
+            # delete object
             try:
                 eoss_object_client.delete_object()
             except EOSSInternalException as e:
                 log.error(
                     f"uncaught issue when deleting object {eoss_object_client.object_name}: {e}"
                 )
+                eoss_object_client.remove_lock()
                 return ("EOSS Internal Exception Failure", 523)
             except MDSExecuteException as e:
                 log.error(
                     f"failed to delete object record {eoss_object_client.object_name}: {e}"
                 )
+                eoss_object_client.remove_lock()
                 return ("MDS Execution Failure", 521)
             except MDSCommitException as e:
                 log.error(
                     f"failed to commit deletion on object {eoss_object_client.object_name}: {e}"
                 )
+                eoss_object_client.remove_lock()
                 return ("MDS Commit Failure", 522)
 
             eoss_object_client.close_mds()
+            eoss_object_client.remove_lock()
             log.info(f"object {eoss_object_client.object_name} is deleted")
 
             return ("Object Deleted", 200)
         else:
             eoss_object_client.close_mds()
+            eoss_object_client.remove_lock()
 
             if object_exists_flag is False:
                 return ("Object Does Not Exist", 404)
@@ -173,6 +200,13 @@ def process_object(object_filename):
     # PUT method
     if request.method == "PUT":
         # PUT method is only available when object does not exist
+        # set write lock
+        try:
+            eoss_object_client.set_write_lock()
+        except ObjectUnderLockException as e:
+            log.info(f"object {eoss_object_client.object_name} write lock bailed")
+            return ("Object Write Conflict", 409)
+
         if object_exists_flag is False:
             # initialize object metadata
             try:
@@ -181,11 +215,13 @@ def process_object(object_filename):
                 log.error(
                     f"failed to set initial object data for object {eoss_object_client.object_name}"
                 )
+                eoss_object_client.remove_lock()
                 return ("MDS Execution Failure", 521)
             except MDSCommitException as e:
                 log.error(
                     f"failed to commit initial object data for object {eoss_object_client.object_name}"
                 )
+                eoss_object_client.remove_lock()
                 return ("MDS Commit Failure", 522)
             else:
                 log.info(
@@ -201,6 +237,7 @@ def process_object(object_filename):
                 )
                 rollback_flag = eoss_object_client.rollback()
                 eoss_object_client.close_mds()
+                eoss_object_client.remove_lock()
 
                 if rollback_flag:
                     return ("EOSS Rollback Done", 526)
@@ -224,6 +261,7 @@ def process_object(object_filename):
                 )
                 rollback_flag = eoss_object_client.rollback()
                 eoss_object_client.close_mds()
+                eoss_object_client.remove_lock()
 
                 if rollback_flag:
                     return ("EOSS Rollback Done", 526)
@@ -243,6 +281,7 @@ def process_object(object_filename):
                 )
                 rollback_flag = eoss_object_client.rollback()
                 eoss_object_client.close_mds()
+                eoss_object_client.remove_lock()
 
                 if rollback_flag:
                     return ("EOSS Rollback Done", 526)
@@ -267,6 +306,7 @@ def process_object(object_filename):
                 )
                 rollback_flag = eoss_object_client.rollback()
                 eoss_object_client.close_mds()
+                eoss_object_client.remove_lock()
 
                 if rollback_flag:
                     return ("EOSS Rollback Done", 526)
@@ -294,6 +334,7 @@ def process_object(object_filename):
                 )
                 rollback_flag = eoss_object_client.rollback()
                 eoss_object_client.close_mds()
+                eoss_object_client.remove_lock()
 
                 if rollback_flag:
                     return ("EOSS Rollback Done", 526)
@@ -304,9 +345,11 @@ def process_object(object_filename):
                     f"object {eoss_object_client.object_name} is saved and metadata database is updated in final state"
                 )
 
+            eoss_object_client.remove_lock()
             return ("Object Uploaded", 201)
         else:
             eoss_object_client.close_mds()
+            eoss_object_client.remove_lock()
 
             if object_exists_flag is True:
                 return ("Object Exists Already", 442)

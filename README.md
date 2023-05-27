@@ -61,6 +61,7 @@ The version salt should not be shared with end users.
 
 EOSS uses 3 integers to object writing states. In each phase, EOSS will update MDS with proper state integer. When an object is uploading, following phases are triggered:
 
+* set an exclusive lock on a lock file with a ".lock" suffix in object name in storage layer
 * object writing request initialized
 * object data is saved with a ".temp" suffix in object name in storage layer
 * object file is renamed to the final object name
@@ -79,6 +80,10 @@ If any MDS update or object storing operations go wrong, the rollback function w
 
 If rollback is failed, it's possible the service is still in inconsistent state. But such leftover states would be cleaned up when service restarts.
 
+### Object Concurrent Write
+
+EOSS utilizes a simplified Two-Phase Locking mechanism to address concurrent write scenarios. Prior to initiating the actual write, an exclusive lock is placed on a lock file. Instead of waiting for the transaction to complete, EOSS promptly returns an HTTP response code 409 to the client, indicating the detection of concurrent writes and advising the client to retry at a later time.
+
 ### Safe Mode
 
 Safe Mode is a special operational mode in EOSS. Once Safe Mode is enabled, all READ operations(HTTP HEAD and GET methods) is still working but all WRITE(HTTP PUT and DELETE methods) operations would be failed.
@@ -91,6 +96,7 @@ EOSS obeys most standard HTTP response codes. Following table lists EOSS customi
 
 | HTTP Response Code | Text | Description |
 |--------------------|------|-------------|
+| 409 | Object Read/Write Conflict | read or write on the same object that has exclusive lock |
 | 440 | Object Initialized Only | object is just initialized, not ready for serving |
 | 441 | Object Saved Not Closed | object is saved with a temp suffix, not ready for serving |
 | 442 | Object Exists Already | object exists in storage layer already, not able to override |
@@ -268,6 +274,8 @@ $ curl http://localhost:4080/eoss/v1/stats -s | json_pp
 
 `METADATA_DB_TABLE`: metadata database table name. default value is the string `metadata`
 
+`OBJECT_LOCK_PATH`: file path location to store lock files of objects
+
 `LOGGING_PATH`: EOSS service logging path to store log files
 
 `LOG_BACKUP_COUNT`: logging rotation count. default value is 10
@@ -313,5 +321,13 @@ There are 4 logs for EOSS service.
 * UTF-8 support
 * Allow users to re-upload the same object without extra object deleting cycle
 * Add more integration testings for the service
+
+## Changelog
+
+```
+0.0.1 - initial commit
+
+0.0.2 - [bug][issue#1] - fix concurrent write failures issue
+```
 
 This object storage service is my experimental project, please feel free to submit a bug or feature request. Thanks!

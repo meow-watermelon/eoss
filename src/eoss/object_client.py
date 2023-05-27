@@ -1,15 +1,19 @@
+import fcntl
 import os
+import pathlib
 import time
 from . import logger
 from . import mds_client
 from . import object_name
 from . import LOGGING_PATH
 from . import METADATA_DB_TABLE
+from . import OBJECT_LOCK_PATH
 from . import STORAGE_PATH
 from .exceptions import MDSConnectException
 from .exceptions import MDSExecuteException
 from .exceptions import MDSCommitException
 from .exceptions import EOSSInternalException
+from .exceptions import ObjectUnderLockException
 
 object_client_log = os.path.join(LOGGING_PATH, "object_client.log")
 log = logger.Logger(__name__, object_client_log)
@@ -36,6 +40,10 @@ class ObjectClient:
     @property
     def object_name(self):
         return object_name.set_object_name(self.object_filename, self.object_version)
+
+    @property
+    def object_lock_filename(self):
+        return os.path.join(OBJECT_LOCK_PATH, self.object_name + ".lock")
 
     def init_mds(self):
         try:
@@ -280,3 +288,44 @@ class ObjectClient:
                 return 1
             if object_exists_flag == 2:
                 return 2
+
+    def set_write_lock(self):
+        """
+        create an exclusive write lock
+        """
+        self.object_lock_filename_fd = open(self.object_lock_filename, "wb")
+
+        log.info(f"setting write lock on object {self.object_name}")
+        try:
+            fcntl.flock(self.object_lock_filename_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as e:
+            log.info(f"object {self.object_name} write lock bailed")
+            raise ObjectUnderLockException(e)
+        else:
+            log.info(f"set object {self.object_name} write lock done")
+
+    def set_read_lock(self):
+        """
+        create a shared read lock
+        """
+        if not os.path.exists(self.object_lock_filename):
+            pathlib.Path.touch(self.object_lock_filename, exist_ok=True)
+
+        self.object_lock_filename_fd = open(self.object_lock_filename, "rb")
+
+        log.info(f"setting read lock on object {self.object_name}")
+        try:
+            fcntl.flock(self.object_lock_filename_fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        except BlockingIOError as e:
+            log.info(f"object {self.object_name} read lock bailed")
+            raise ObjectUnderLockException(e)
+        else:
+            log.info(f"set object {self.object_name} read lock done")
+
+    def remove_lock(self):
+        """
+        remove a lock
+        """
+        fcntl.flock(self.object_lock_filename_fd, fcntl.LOCK_UN)
+        self.object_lock_filename_fd.close()
+        log.info(f"removed lock on object lock file {self.object_lock_filename}")
