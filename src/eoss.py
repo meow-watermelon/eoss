@@ -199,7 +199,6 @@ def process_object(object_filename):
 
     # PUT method
     if request.method == "PUT":
-        # PUT method is only available when object does not exist
         # set write lock
         try:
             eoss_object_client.set_write_lock()
@@ -207,10 +206,13 @@ def process_object(object_filename):
             log.info(f"object {eoss_object_client.object_name} write lock bailed")
             return ("Object Write Conflict", 409)
 
-        if object_exists_flag is False:
+        if object_exists_flag is True or object_exists_flag is False:
             # initialize object metadata
             try:
-                eoss_object_client.set_object_init_data()
+                if object_exists_flag is True:
+                    eoss_object_client.set_object_init_data(override=True)
+                else:
+                    eoss_object_client.set_object_init_data()
             except MDSExecuteException as e:
                 log.error(
                     f"failed to set initial object data for object {eoss_object_client.object_name}"
@@ -351,8 +353,6 @@ def process_object(object_filename):
             eoss_object_client.close_mds()
             eoss_object_client.remove_lock()
 
-            if object_exists_flag is True:
-                return ("Object Exists Already", 442)
             if object_exists_flag == 1:
                 return ("Object Initialized Only", 440)
             if object_exists_flag == 2:
