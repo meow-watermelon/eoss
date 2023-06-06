@@ -58,23 +58,34 @@ class ObjectClient:
     def close_mds(self):
         self.mds_client.close()
 
-    def set_object_init_data(self):
+    def set_object_init_data(self, override=False):
         """
         set initialized data for object, only id, filename, version and state would be inserted
-        this method should only run once when a new object is uploaded
+        only set override=True when uploading the same object
         """
         try:
-            self.mds_client.execute(
-                f"INSERT INTO {METADATA_DB_TABLE} VALUES (?, ?, ?, ?, ?, ?)",
-                (
-                    self.object_name,
-                    self.object_filename,
-                    self.object_version,
-                    None,
-                    None,
-                    1,
-                ),
-            )
+            if override:
+                self.mds_client.execute(
+                    f"UPDATE {METADATA_DB_TABLE} SET size = ?, timestamp = ?, state = ? WHERE id = ?",
+                    (
+                        None,
+                        None,
+                        1,
+                        self.object_name,
+                    ),
+                )
+            else:
+                self.mds_client.execute(
+                    f"INSERT INTO {METADATA_DB_TABLE} VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        self.object_name,
+                        self.object_filename,
+                        self.object_version,
+                        None,
+                        None,
+                        1,
+                    ),
+                )
         except MDSExecuteException as e:
             log.error(
                 f"failed to set initial object data for object {self.object_name}"

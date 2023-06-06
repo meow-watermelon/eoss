@@ -8,6 +8,7 @@ Eric's Object Storage Service(EOSS) is my experimental object storage service. I
 * support HTTP HEAD/GET/PUT/DELETE methods for object operations
 * support object writing operation rollback if failure occurs
 * support safe mode
+* support concurrent writing
 * object metadata and object files should be easy to move around
 
 EOSS uses local filesystem as the storage layer.
@@ -99,7 +100,6 @@ EOSS obeys most standard HTTP response codes. Following table lists EOSS customi
 | 409 | Object Read/Write Conflict | read or write on the same object that has exclusive lock |
 | 440 | Object Initialized Only | object is just initialized, not ready for serving |
 | 441 | Object Saved Not Closed | object is saved with a temp suffix, not ready for serving |
-| 442 | Object Exists Already | object exists in storage layer already, not able to override |
 | 520 | MDS Connection Failure | failed to connect MDS |
 | 521 | MDS Execution Failure | failed to execute SQL queries on MDS |
 | 522 | MDS Commit Failure | failed to commit transactions to MDS |
@@ -171,7 +171,7 @@ $ curl http://localhost:4080/eoss/v1/object/testfile100m -H "X-EOSS-Object-Versi
 
 HTTP PUT method is used for uploading object.
 
-If the object exists in the storage already, HTTP PUT will be failed with a HTTP 442 response code. User needs to delete the object first then re-uploading again.
+If the object exists in the storage already, HTTP PUT will re-write the same object.
 
 ##### Data Flow
 
@@ -319,7 +319,7 @@ There are 4 logs for EOSS service.
 ## TODO
 
 * UTF-8 support
-* Allow users to re-upload the same object without extra object deleting cycle
+* ~~Allow users to re-upload the same object without extra object deleting cycle~~
 * Add more integration testings for the service
 
 ## Changelog
@@ -328,6 +328,8 @@ There are 4 logs for EOSS service.
 0.0.1 - initial commit
 
 0.0.2 - [bug][issue#1] - fix concurrent write failures issue
+
+0.0.3 - [enhancement][issue#2] - support override writing in PUT method
 ```
 
 This object storage service is my experimental project, please feel free to submit a bug or feature request. Thanks!
