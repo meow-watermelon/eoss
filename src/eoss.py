@@ -27,7 +27,7 @@ log = logger.Logger(__name__, os.path.join(LOGGING_PATH, "eoss.log"))
 access_log = logger.AccessLogger("access_log", os.path.join(LOGGING_PATH, "access.log"))
 
 # enable HTTP/1.1
-WSGIRequestHandler.protocol_version = "HTTP/1.0"
+WSGIRequestHandler.protocol_version = "HTTP/1.1"
 
 app = Flask(__name__)
 
