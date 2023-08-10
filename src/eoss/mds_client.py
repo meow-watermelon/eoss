@@ -60,6 +60,8 @@ class MDSClient:
             log.error(f"failed to execute fetchall() call - error: {str(e)}")
             raise MDSExecuteException(str(e))
 
+        return output
+
     def commit(self):
         try:
             self.db_connection.commit()
