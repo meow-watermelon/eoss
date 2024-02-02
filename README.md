@@ -330,6 +330,8 @@ There are 4 logs for EOSS service.
 0.0.2 - [bug][issue#1] - fix concurrent write failures issue
 
 0.0.3 - [enhancement][issue#2] - support override writing in PUT method
+
+0.0.4 - [enhancement][issue#9] - improve data store resilience
 ```
 
 This object storage service is my experimental project, please feel free to submit a bug or feature request. Thanks!

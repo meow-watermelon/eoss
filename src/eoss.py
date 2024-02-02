@@ -257,6 +257,8 @@ def process_object(object_filename):
                     "wb",
                 ) as f:
                     f.write(request.data)
+                    f.flush()
+                    os.fsync(f.fileno())
             except Exception as e:
                 log.error(
                     f"failed to write object data to {eoss_object_client.object_name} temp file: {e}"
